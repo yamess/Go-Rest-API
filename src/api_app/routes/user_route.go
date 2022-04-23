@@ -1,14 +1,14 @@
 package routes
 
 import (
-	"github.com/api_app/handlers"
+	"github.com/api_app/services"
 	"github.com/gorilla/mux"
 )
 
 func UserRoutes(r *mux.Router) {
-	r.HandleFunc("/users", handlers.GetUsers).Methods("GET")
-	r.HandleFunc("/users", handlers.CreateUser).Methods("POST")
-	r.HandleFunc("/users/{id}", handlers.GetUser).Methods("GET")
-	r.HandleFunc("/users/update/{id}", handlers.UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/delete/{id}", handlers.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users", services.GetUsers).Methods("GET")
+	r.HandleFunc("/users", services.CreateUser).Methods("POST")
+	r.HandleFunc("/users/{id}", services.GetUser).Methods("GET")
+	r.HandleFunc("/users/update/{id}", services.UpdateUser).Methods("PUT")
+	r.HandleFunc("/users/delete/{id}", services.DeleteUser).Methods("DELETE")
 }
