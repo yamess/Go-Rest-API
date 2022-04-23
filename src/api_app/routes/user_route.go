@@ -6,11 +6,9 @@ import (
 )
 
 func UserRoutes(r *mux.Router) {
-	userRoute := r.PathPrefix("/users").Subrouter()
-
-	userRoute.HandleFunc("/all", handlers.AllUsers).Methods("GET")
-	userRoute.HandleFunc("/create", handlers.NewUser).Methods("POST")
-	userRoute.HandleFunc("/{id}", handlers.SingleUser).Methods("GET")
-	userRoute.HandleFunc("/update/{id}", handlers.UpdateUser).Methods("PUT")
-	userRoute.HandleFunc("/delete/{id}", handlers.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users", handlers.GetUsers).Methods("GET")
+	r.HandleFunc("/users", handlers.CreateUser).Methods("POST")
+	r.HandleFunc("/users/{id}", handlers.GetUser).Methods("GET")
+	r.HandleFunc("/users/update/{id}", handlers.UpdateUser).Methods("PUT")
+	r.HandleFunc("/users/delete/{id}", handlers.DeleteUser).Methods("DELETE")
 }
