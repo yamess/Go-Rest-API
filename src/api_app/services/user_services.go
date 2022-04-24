@@ -10,37 +10,6 @@ import (
 	"time"
 )
 
-var users []models.User
-
-func GetUsers(w http.ResponseWriter, r *http.Request) {
-
-	users := append(
-		users,
-		models.User{
-			ID:        uuid.New(),
-			FirstName: "Kary",
-			LastName:  "Yamess",
-			Email:     "kary@yamess.com",
-			Password:  "stRoNgpasSworD123",
-			IsActive:  true,
-			CreatedAt: time.Now(),
-		},
-		models.User{
-			ID:        uuid.New(),
-			FirstName: "Bro",
-			LastName:  "Brober",
-			Email:     "bro@brober.ca",
-			Password:  "faKepasswOrd123",
-			IsActive:  false,
-			CreatedAt: time.Now(),
-		})
-
-	err := json.NewEncoder(w).Encode(users)
-	if err != nil {
-		panic("Enable to handle request")
-	}
-}
-
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -53,30 +22,87 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// Set the ID and creation date and append to the db
 	user.ID = uuid.New()
-	user.CreatedAt = time.Now()
+	user.CreatedAt = time.Now().UTC()
 
-	users = append(users, user)
+	result := user.CreateRecord()
 
-	log.Println(user.Email)
+	if result.RowsAffected > 0 {
+		log.Println("New User created")
 
-	err = json.NewEncoder(w).Encode(&user)
+		err = json.NewEncoder(w).Encode(&user)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		err = json.NewEncoder(w).Encode("Enable to insert record")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+}
+
+func GetUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var users models.Users
+
+	// Get db object
+	users.ReadRecords()
+
+	err := json.NewEncoder(w).Encode(&users)
 	if err != nil {
-		panic(err)
+		panic("Enable to handle request")
 	}
 }
 
-func GetUser(w http.ResponseWriter, r *http.Request) {
+func GetUserByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
 
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	json.NewEncoder(w).Encode(id)
+	result := user.ReadRecord("id", id)
+
+	if result.Error != nil {
+		log.Println("Enable to get data from database")
+		panic(result.Error)
+	}
+
+	err := json.NewEncoder(w).Encode(user)
+	if err != nil {
+		log.Println("Enable to encode response")
+		panic(err.Error())
+	}
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Println("Enable to decode the request body")
+		log.Println(err.Error())
+		panic(err.Error())
+	}
+
+	result := user.UpdateRecord()
+	if result != nil {
+		log.Println("Enable to update data in the database")
+		panic(result.Error)
+	}
+
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		log.Println("Enable to encode response data")
+		panic(err.Error())
+	}
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("User deleted")
-}
-
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode("User updated")
 }
