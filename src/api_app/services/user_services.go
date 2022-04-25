@@ -83,12 +83,18 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 
+	vars := mux.Vars(r)
+	id := vars["id"]
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Println("Enable to decode the request body")
 		log.Println(err.Error())
 		panic(err.Error())
 	}
+
+	user.ID = uuid.Must(uuid.Parse(id))
+	log.Println(user)
 
 	result := user.UpdateRecord()
 	if result != nil {

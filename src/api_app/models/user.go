@@ -36,6 +36,9 @@ func (user *User) CreateRecord() *gorm.DB {
 }
 
 func (user *User) UpdateRecord() *gorm.DB {
-	result := database.PG.Conn.Model(&user).Updates(user)
+	result := database.PG.Conn.Model(&user).
+		Where("id = ?", user.ID).
+		Omit("id", "created_at").
+		Updates(user)
 	return result
 }
