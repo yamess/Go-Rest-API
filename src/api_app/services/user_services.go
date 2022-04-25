@@ -2,12 +2,11 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/api_app/models"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"time"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -19,10 +18,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
-	// Set the ID and creation date and append to the db
-	user.ID = uuid.New()
-	user.CreatedAt = time.Now().UTC()
 
 	result := user.CreateRecord()
 
@@ -93,11 +88,8 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	user.ID = uuid.Must(uuid.Parse(id))
-	log.Println(user)
-
-	result := user.UpdateRecord()
-	if result != nil {
+	result := user.UpdateRecord(id)
+	if result.Error != nil {
 		log.Println("Enable to update data in the database")
 		panic(result.Error)
 	}
@@ -110,5 +102,24 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode("User deleted")
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	result := user.DeleteRecord(id)
+
+	if result.Error != nil {
+		log.Printf("Enable to delete user with id %s \n", id)
+		panic(result.Error)
+
+	} else if result.RowsAffected == 0 {
+		response := fmt.Sprintf("No user with id %s exist", id)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := fmt.Sprintf("User with id %s deleted", id)
+		json.NewEncoder(w).Encode(response)
+	}
+
 }

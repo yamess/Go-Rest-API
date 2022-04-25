@@ -16,6 +16,7 @@ type User struct {
 	Password  string    `json:"Password"`
 	IsActive  bool      `json:"IsActive"`
 	CreatedAt time.Time `json:"CreatedAt"`
+	UpdatedAt time.Time `json:"UpdatedAt"`
 }
 
 type Users []User
@@ -31,14 +32,29 @@ func (user *User) ReadRecord(searchField string, searchValue any) *gorm.DB {
 }
 
 func (user *User) CreateRecord() *gorm.DB {
+	user.ID = uuid.New()
+	user.CreatedAt = time.Now().UTC()
 	result := database.PG.Conn.Create(&user)
 	return result
 }
 
-func (user *User) UpdateRecord() *gorm.DB {
+func (user *User) UpdateRecord(id string) *gorm.DB {
+	user.ID = uuid.Must(uuid.Parse(id))
+	user.UpdatedAt = time.Now().UTC()
+
 	result := database.PG.Conn.Model(&user).
-		Where("id = ?", user.ID).
 		Omit("id", "created_at").
 		Updates(user)
+	if result.Error == nil {
+		user.ReadRecord("id", user.ID)
+		user.Password = ""
+	}
+
+	return result
+}
+
+func (user *User) DeleteRecord(id string) *gorm.DB {
+	user.ID = uuid.Must(uuid.Parse(id))
+	result := database.PG.Conn.Delete(&user)
 	return result
 }
