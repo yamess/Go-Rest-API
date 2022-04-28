@@ -2,44 +2,33 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	middleware "github.com/api_app/middlewares"
 	"github.com/api_app/models"
-	"github.com/google/uuid"
+	"github.com/api_app/utils"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
-	"time"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var user models.User
-
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var err error
+	user := r.Context().Value(middleware.KeyUser{}).(models.User)
+	user.Password, err = utils.HashPassword(user.Password)
 	if err != nil {
-		panic(err)
+		log.Println("Error while hashing the password")
+		panic(err.Error())
 	}
-
-	// Set the ID and creation date and append to the db
-	user.ID = uuid.New()
-	user.CreatedAt = time.Now().UTC()
-
 	result := user.CreateRecord()
-
-	if result.RowsAffected > 0 {
-		log.Println("New User created")
-
-		err = json.NewEncoder(w).Encode(&user)
-		if err != nil {
-			panic(err)
-		}
+	if result.Error != nil {
+		log.Print(result.Error)
+		http.Error(w, "Enable to insert record", http.StatusBadRequest)
 	} else {
-		err = json.NewEncoder(w).Encode("Enable to insert record")
-		if err != nil {
-			panic(err)
-		}
+		json.NewEncoder(w).Encode(&user)
 	}
-
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -66,15 +55,13 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	result := user.ReadRecord("id", id)
 
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		log.Println("Enable to get data from database")
 		panic(result.Error)
-	}
-
-	err := json.NewEncoder(w).Encode(user)
-	if err != nil {
-		log.Println("Enable to encode response")
-		panic(err.Error())
+	} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		json.NewEncoder(w).Encode("No record found")
+	} else {
+		json.NewEncoder(w).Encode(user)
 	}
 }
 
@@ -83,6 +70,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 
+	vars := mux.Vars(r)
+	id := vars["id"]
+
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		log.Println("Enable to decode the request body")
@@ -90,8 +80,8 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		panic(err.Error())
 	}
 
-	result := user.UpdateRecord()
-	if result != nil {
+	result := user.UpdateRecord(id)
+	if result.Error != nil {
 		log.Println("Enable to update data in the database")
 		panic(result.Error)
 	}
@@ -104,5 +94,24 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode("User deleted")
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	result := user.DeleteRecord(id)
+
+	if result.Error != nil {
+		log.Printf("Enable to delete user with id %s \n", id)
+		panic(result.Error)
+
+	} else if result.RowsAffected == 0 {
+		response := fmt.Sprintf("No user with id %s exist", id)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := fmt.Sprintf("User with id %s deleted", id)
+		json.NewEncoder(w).Encode(response)
+	}
+
 }

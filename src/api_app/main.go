@@ -8,17 +8,12 @@ import (
 	"github.com/api_app/myserver"
 )
 
-func init() {
-
-}
-
 func main() {
 	fmt.Println("Server starting...")
 	fmt.Println("Server started!")
 	fmt.Printf("Server running at %s\n", constants.Host)
 
 	db.AutoMigrate(&models.User{})
-	//db.AutoMigrate()
 
 	myserver.Server()
 }
