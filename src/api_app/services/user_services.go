@@ -2,39 +2,33 @@ package services
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	middleware "github.com/api_app/middlewares"
 	"github.com/api_app/models"
+	"github.com/api_app/utils"
 	"github.com/gorilla/mux"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var user models.User
-
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var err error
+	user := r.Context().Value(middleware.KeyUser{}).(models.User)
+	user.Password, err = utils.HashPassword(user.Password)
 	if err != nil {
-		panic(err)
+		log.Println("Error while hashing the password")
+		panic(err.Error())
 	}
-
 	result := user.CreateRecord()
-
-	if result.RowsAffected > 0 {
-		log.Println("New User created")
-
-		err = json.NewEncoder(w).Encode(&user)
-		if err != nil {
-			panic(err)
-		}
+	if result.Error != nil {
+		log.Print(result.Error)
+		http.Error(w, "Enable to insert record", http.StatusBadRequest)
 	} else {
-		err = json.NewEncoder(w).Encode("Enable to insert record")
-		if err != nil {
-			panic(err)
-		}
+		json.NewEncoder(w).Encode(&user)
 	}
-
 }
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -61,15 +55,13 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	result := user.ReadRecord("id", id)
 
-	if result.Error != nil {
+	if result.Error != nil && !errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		log.Println("Enable to get data from database")
 		panic(result.Error)
-	}
-
-	err := json.NewEncoder(w).Encode(user)
-	if err != nil {
-		log.Println("Enable to encode response")
-		panic(err.Error())
+	} else if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		json.NewEncoder(w).Encode("No record found")
+	} else {
+		json.NewEncoder(w).Encode(user)
 	}
 }
 
