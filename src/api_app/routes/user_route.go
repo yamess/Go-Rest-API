@@ -1,16 +1,31 @@
 package routes
 
 import (
-	"github.com/api_app/handlers"
+	middleware "github.com/api_app/middlewares"
+	"github.com/api_app/services"
 	"github.com/gorilla/mux"
+	"net/http"
 )
 
 func UserRoutes(r *mux.Router) {
-	userRoute := r.PathPrefix("/users").Subrouter()
 
-	userRoute.HandleFunc("/all", handlers.AllUsers).Methods("GET")
-	userRoute.HandleFunc("/create", handlers.NewUser).Methods("POST")
-	userRoute.HandleFunc("/{id}", handlers.SingleUser).Methods("GET")
-	userRoute.HandleFunc("/update/{id}", handlers.UpdateUser).Methods("PUT")
-	userRoute.HandleFunc("/delete/{id}", handlers.DeleteUser).Methods("DELETE")
+	getAllRouter := r.Methods(http.MethodGet).Subrouter()
+	getAllRouter.HandleFunc("/users", services.GetUsers)
+	//getRouter.Use(middleware.SetupCORS, middleware.Logging)
+
+	postRouter := r.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/users", services.CreateUser)
+	postRouter.Use(middleware.Validator)
+
+	getRouter := r.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/users/{id}", services.GetUserByID)
+	//r.HandleFunc("/users/{id}", services.GetUserByID).Methods("GET")
+
+	updateRouter := r.Methods(http.MethodPatch).Subrouter()
+	updateRouter.HandleFunc("/users/update/{id}", services.UpdateUser)
+	//r.HandleFunc("/users/update/{id}", middleware.ChainMiddleware(services.UpdateUser)).Methods("PUT")
+
+	deleteRouter := r.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.HandleFunc("/users/delete/{id}", services.DeleteUser)
+	//r.HandleFunc("/users/delete/{id}", middleware.ChainMiddleware(services.DeleteUser)).Methods("DELETE")
 }
