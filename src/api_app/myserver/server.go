@@ -17,6 +17,7 @@ func Server() {
 	allRouter := baseRouter.PathPrefix("/api").Subrouter()
 
 	routes.UserRoutes(allRouter)
+	routes.AuthRoutes(allRouter)
 	allRouter.Use(middleware.SetupCORS, middleware.Logging)
 
 	srv := &http.Server{
