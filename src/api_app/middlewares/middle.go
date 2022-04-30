@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/api_app/models"
+	"github.com/api_app/utils"
 	"log"
 	"net/http"
 )
@@ -46,5 +47,22 @@ func SetupCORS(f http.Handler) http.Handler {
 			"Accept-Encoding, X-CSRF-Token, Authorization",
 		)
 		f.ServeHTTP(w, r)
+	})
+}
+
+func SignInToken(f http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var signIn models.SignIn
+		//var user models.Users
+
+		signIn.FromJSON(r.Body)
+		user, _ := signIn.GetUser()
+
+		isPwdValid := utils.CheckPasswordHash(signIn.Password, user.Password)
+		if isPwdValid {
+			token, _ := models.GenerateJWT(&user)
+			log.Println(token)
+			f.ServeHTTP(w, r)
+		}
 	})
 }
