@@ -44,10 +44,10 @@ func GenerateJWT(user *User) (string, error) {
 	claims["authorized"] = true
 	claims["client"] = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
 	claims["user_id"] = user.ID
-	claims["user_email"] = user.Email
 	claims["exp"] = time.Now().Add(time.Minute * duration).Unix()
 
 	tokenString, err := token.SignedString(JwtKey)
+
 	if err != nil {
 		fmt.Printf("Cannot genrate token")
 	}
